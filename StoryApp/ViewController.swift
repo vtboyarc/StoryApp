@@ -29,17 +29,5 @@ class ViewController: UIViewController {
             pageController.page = Adventure.story
         }
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
-
 }
 

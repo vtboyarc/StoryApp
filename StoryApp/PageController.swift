@@ -8,42 +8,82 @@
 
 import UIKit
 
+extension NSAttributedString {
+    var stringRange: NSRange {
+        return NSMakeRange(0, self.length)
+    }
+}
+
+extension Story {
+    var attributedText: NSAttributedString {
+        let attributedString = NSMutableAttributedString(string: text)
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = 10
+        
+        attributedString.addAttribute(NSParagraphStyleAttributeName, value: paragraphStyle, range: attributedString.stringRange)
+        
+        return attributedString
+    }
+}
+
+extension Page {
+    func story(attributed: Bool) -> NSAttributedString {
+        if attributed {
+            return story.attributedText
+        } else {
+            return NSAttributedString(string: story.text)
+        }
+    }
+}
+
 class PageController: UIViewController {
     
     var page: Page?
     
     //MARK: - Views
     
-    let artworkView: UIImageView = {
+    //when a property is lazy, value is deferred until the property is used
+    //which means other classes will load first, so you can use stored properties in here by making it lazy
+    lazy var artworkView: UIImageView = {
        let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        
+        imageView.image = self.page?.story.artwork
+
         return imageView
         
     }()
     
     
-    let storyLabel: UILabel = {
+    lazy var storyLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.numberOfLines = 0
+        label.attributedText = self.page?.story(attributed: true)
         
         return label
     }()
     
-    
-    
-    let firstChoiceButton: UIButton = {
+    lazy var firstChoiceButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
+        
+        let title = self.page?.firstChoice?.title ?? "Play Again"
+        let selector = self.page?.firstChoice != nil ? #selector(PageController.loadFirstChoice) : #selector(PageController.playAgain)
+        
+        button.setTitle(title, for: .normal)
+        button.addTarget(self, action: selector, for: .touchUpInside)
         
         return button
         
     }()
     
-    let secondChoiceButton: UIButton = {
+    lazy var secondChoiceButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
+        
+        button.setTitle(self.page?.secondChoice?.title, for: .normal)
+        button.addTarget(self, action: #selector(PageController.loadSecondChoice), for: .touchUpInside)
         
         return button
         
@@ -63,32 +103,6 @@ class PageController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .white
-        
-        if let page = page {
-            artworkView.image = page.story.artwork
-            
-            let attributedString = NSMutableAttributedString(string: page.story.text)
-            
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.lineSpacing = 10
-            
-            attributedString.addAttribute(NSParagraphStyleAttributeName, value: paragraphStyle, range: NSMakeRange(0, attributedString.length))
-            
-            storyLabel.attributedText = attributedString
-            
-            if let firstChoice = page.firstChoice {
-                firstChoiceButton.setTitle(firstChoice.title, for: .normal)
-                firstChoiceButton.addTarget(self, action: #selector(PageController.loadFirstChoice), for: .touchUpInside)
-            } else {
-                firstChoiceButton.setTitle("Play again", for: .normal)
-                firstChoiceButton.addTarget(self, action: #selector(PageController.playAgain), for: .touchUpInside)
-            }
-            
-            if let secondChoice = page.secondChoice {
-                secondChoiceButton.setTitle(secondChoice.title, for: .normal)
-                secondChoiceButton.addTarget(self, action: #selector(PageController.loadSecondChoice), for: .touchUpInside)
-            }
-        }
     }
 
     override func didReceiveMemoryWarning() {
